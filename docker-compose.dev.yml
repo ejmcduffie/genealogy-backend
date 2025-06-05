@@ -1,0 +1,201 @@
+version: '3.8'
+
+services:
+  # Development overrides
+  app:
+    build:
+      context: .
+      target: builder
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+
+  # Auth service development mode
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/auth-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=1h
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - REFRESH_TOKEN_EXPIRES_IN=7d
+    command: npm run dev
+    ports:
+      - "4001:4001"
+
+  # GEDCOM service development mode  
+  gedcom-service:
+    build:
+      context: ./services/gedcom-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/gedcom-service/src:/app/src
+      - ./uploads:/app/uploads
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_URI=redis://:${REDIS_PASSWORD}@redis:6379
+    command: npm run dev
+    ports:
+      - "4002:4002"
+
+  # Verification service development mode
+  verification-service:
+    build:
+      context: ./services/verification-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/verification-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_URI=redis://:${REDIS_PASSWORD}@redis:6379
+    command: npm run dev
+    ports:
+      - "4003:4003"
+
+  # Payment service development mode
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/payment-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - ETH_RPC_URL=${ETH_RPC_URL}
+      - ETH_CHAIN_ID=${ETH_CHAIN_ID}
+    command: npm run dev
+    ports:
+      - "4004:4004"
+
+  # NFT service development mode
+  nft-service:
+    build:
+      context: ./services/nft-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/nft-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - ETH_RPC_URL=${ETH_RPC_URL}
+      - NFT_CONTRACT_ADDRESS=${NFT_CONTRACT_ADDRESS}
+      - ETH_PRIVATE_KEY=${ETH_PRIVATE_KEY}
+    command: npm run dev
+    ports:
+      - "4005:4005"
+
+  # Storage service development mode
+  storage-service:
+    build:
+      context: ./services/storage-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/storage-service/src:/app/src
+      - ./uploads:/app/uploads
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - ARDRIVE_WALLET_FILE=${ARDRIVE_WALLET_FILE}
+      - ARDRIVE_WALLET_PASSWORD=${ARDRIVE_WALLET_PASSWORD}
+    command: npm run dev
+    ports:
+      - "4006:4006"
+
+  # ZKP service development mode
+  zkp-service:
+    build:
+      context: ./services/zkp-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/zkp-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - ALEO_PROGRAM_ID=${ALEO_PROGRAM_ID}
+    command: npm run dev
+    ports:
+      - "4007:4007"
+
+  # Workers development mode
+  verification-worker:
+    build:
+      context: ./workers/verification-worker
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./workers/verification-worker/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_URI=redis://:${REDIS_PASSWORD}@redis:6379
+    command: npm run dev
+
+  payment-worker:
+    build:
+      context: ./workers/payment-worker
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./workers/payment-worker/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - REDIS_URI=redis://:${REDIS_PASSWORD}@redis:6379
+      - ETH_RPC_URL=${ETH_RPC_URL}
+    command: npm run dev
+
+  # Development tools
+  mongodb-express:
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_USER}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_PASSWORD}
+      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/?authSource=admin
+    depends_on:
+      - mongodb
+    networks:
+      - ancestry-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: always
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=redis:redis:6379:0:${REDIS_PASSWORD}
+    depends_on:
+      - redis
+    networks:
+      - ancestry-network
